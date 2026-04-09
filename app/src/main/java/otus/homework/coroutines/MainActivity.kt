@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
         scope = PresenterScope()
         catsPresenter = CatsPresenter(
             catsService = diContainer.service,
+            imageService = diContainer.imgService,
             coroutineScope = scope,
             onErrorRequest = { exception ->
                 if (exception is SocketTimeoutException) {

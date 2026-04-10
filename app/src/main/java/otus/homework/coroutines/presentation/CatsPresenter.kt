@@ -1,20 +1,12 @@
 package otus.homework.coroutines.presentation
 
-import android.util.Log
-import com.squareup.picasso.Picasso
-import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import otus.homework.coroutines.ICatsView
 import otus.homework.coroutines.network.RetrofitClient
-import otus.homework.coroutines.network.service.CatsService
-import otus.homework.coroutines.network.service.ImgService
-import kotlin.invoke
 
 class CatsPresenter(
     private val retrofitClient: RetrofitClient,
@@ -28,8 +20,10 @@ class CatsPresenter(
             try {
                 val catFact = retrofitClient.getCatFact()
                 catFact?.let { fact ->
-                    _catsView?.populate(catFact)
+                    _catsView?.populate(fact)
                 }
+            } catch (ex: CancellationException) {
+                throw ex
             } catch (ex: Exception) {
                 onErrorRequest?.invoke(ex)
             }

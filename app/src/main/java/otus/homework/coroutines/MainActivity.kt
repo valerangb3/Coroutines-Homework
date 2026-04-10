@@ -2,8 +2,14 @@ package otus.homework.coroutines
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.coroutineScope
+import otus.homework.coroutines.di.DiContainer
+import otus.homework.coroutines.presentation.CatsPresenter
+import otus.homework.coroutines.utils.CrashMonitor
+import otus.homework.coroutines.utils.PresenterScope
 import java.net.SocketTimeoutException
 
 class MainActivity : AppCompatActivity() {
@@ -18,24 +24,31 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         val view = layoutInflater.inflate(R.layout.activity_main, null) as CatsView
-        val appContext = this.applicationContext
         setContentView(view)
         scope = PresenterScope()
+        withPresenter(view)
+    }
+
+    private fun withPresenter(catsView: CatsView) {
+        val appContext = this.applicationContext
         catsPresenter = CatsPresenter(
-            catsService = diContainer.service,
-            imageService = diContainer.imgService,
+            retrofitClient = diContainer.retrofitClient,
             coroutineScope = scope,
             onErrorRequest = { exception ->
                 if (exception is SocketTimeoutException) {
-                    Toast.makeText(appContext, "Не удалось получить ответ от сервера", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        appContext,
+                        "Не удалось получить ответ от сервера",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
                     CrashMonitor.trackWarning()
                     Toast.makeText(appContext, exception.message, Toast.LENGTH_SHORT).show()
                 }
             }
         )
-        view.presenter = catsPresenter
-        catsPresenter.attachView(view)
+        catsView.presenter = catsPresenter
+        catsPresenter.attachView(catsView)
         catsPresenter.onInitComplete()
     }
 

@@ -1,6 +1,6 @@
-package otus.homework.coroutines
+package otus.homework.coroutines.network.service
 
-import kotlinx.coroutines.Deferred
+import otus.homework.coroutines.network.model.Fact
 import retrofit2.http.GET
 
 interface CatsService {

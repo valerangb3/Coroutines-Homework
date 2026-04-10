@@ -1,8 +1,8 @@
-package otus.homework.coroutines
+package otus.homework.coroutines.network.model
 
 import com.google.gson.annotations.SerializedName
 
-data class Image(
+data class ImageResponse(
     @field:SerializedName("id")
     val id: String,
     @field:SerializedName("url")

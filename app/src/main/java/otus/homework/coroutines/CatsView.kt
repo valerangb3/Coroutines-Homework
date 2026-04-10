@@ -6,6 +6,8 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import otus.homework.coroutines.presentation.CatFact
+import otus.homework.coroutines.presentation.CatsPresenter
 
 class CatsView @JvmOverloads constructor(
     context: Context,
@@ -13,7 +15,7 @@ class CatsView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr), ICatsView {
 
-    var presenter :CatsPresenter? = null
+    var presenter : CatsPresenter? = null
 
     override fun onFinishInflate() {
         super.onFinishInflate()
@@ -22,13 +24,14 @@ class CatsView @JvmOverloads constructor(
         }
     }
 
-    override fun populate(fact: Fact, image: Image) {
+    override fun populate(fact: CatFact) {
         findViewById<TextView>(R.id.fact_textView).text = fact.fact
-        //findViewById<ImageView>(R.id.cat_imageView).setImageResource()
+        fact.image?.let {
+            findViewById<ImageView>(R.id.cat_imageView).setImageBitmap(it)
+        }
     }
 }
 
 interface ICatsView {
-
-    fun populate(fact: Fact, image: Image)
+    fun populate(fact: CatFact)
 }

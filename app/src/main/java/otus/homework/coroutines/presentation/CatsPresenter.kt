@@ -1,39 +1,36 @@
-package otus.homework.coroutines
+package otus.homework.coroutines.presentation
 
 import android.util.Log
+import com.squareup.picasso.Picasso
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import otus.homework.coroutines.ICatsView
+import otus.homework.coroutines.network.RetrofitClient
+import otus.homework.coroutines.network.service.CatsService
+import otus.homework.coroutines.network.service.ImgService
+import kotlin.invoke
 
 class CatsPresenter(
-    private val catsService: CatsService,
-    private val imageService: ImgService,
-    private val coroutineScope: CoroutineScope = CoroutineScope( Dispatchers.Main + CoroutineName("CatsCoroutine")),
+    private val retrofitClient: RetrofitClient,
+    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main + CoroutineName("CatsCoroutine")),
     private val onErrorRequest: ((ex: Exception) -> Unit)? = {}
 ) {
-
     private var _catsView: ICatsView? = null
 
-    fun onInitComplete(dispatcher: CoroutineDispatcher = Dispatchers.IO) {
+    fun onInitComplete() {
         coroutineScope.launch {
             try {
-                withContext(dispatcher) {
-                    val catFactDeferred = async {
-                        catsService.getCatFact()
-                    }
-                    val imageDeferred = async {
-                        imageService.getImage()
-                    }
-                    val catFact = catFactDeferred.await()
-                    val image = imageDeferred.await()
+                val catFact = retrofitClient.getCatFact()
+                catFact?.let { fact ->
                     _catsView?.populate(catFact)
                 }
             } catch (ex: Exception) {
-                Log.d("EXCEPTION", ex.message ?: "SMTH ERR")
                 onErrorRequest?.invoke(ex)
             }
         }

@@ -2,10 +2,32 @@ package otus.homework.coroutines
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import com.squareup.picasso.Picasso
+import kotlinx.coroutines.launch
+import otus.homework.coroutines.di.DiContainer
+import otus.homework.coroutines.presentation.CatsPresenter
+import otus.homework.coroutines.presentation.CatsViewModel
+import otus.homework.coroutines.presentation.Error
+import otus.homework.coroutines.presentation.Idle
+import otus.homework.coroutines.presentation.Success
+import otus.homework.coroutines.utils.CrashMonitor
+import otus.homework.coroutines.utils.PresenterScope
+import otus.homework.coroutines.utils.cancel
+import java.net.SocketTimeoutException
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var catsPresenter: CatsPresenter
+
+    lateinit var scope: PresenterScope
+
+    private val catsViewModel by viewModels<CatsViewModel> {
+        CatsViewModel.getFactory(diContainer.retrofitClient)
+    }
 
     private val diContainer = DiContainer()
 
@@ -15,13 +37,68 @@ class MainActivity : AppCompatActivity() {
         val view = layoutInflater.inflate(R.layout.activity_main, null) as CatsView
         setContentView(view)
 
-        catsPresenter = CatsPresenter(diContainer.service)
-        view.presenter = catsPresenter
-        catsPresenter.attachView(view)
+        scope = PresenterScope()
+        withViewModel(view)
+        //withPresenter(view)
+    }
+
+    private fun withPresenter(catsView: CatsView) {
+        val appContext = this.applicationContext
+
+        catsPresenter = CatsPresenter(
+            retrofitClient = diContainer.retrofitClient,
+            coroutineScope = scope,
+            onErrorRequest = { exception ->
+                if (exception is SocketTimeoutException) {
+                    Toast.makeText(
+                        appContext,
+                        "Не удалось получить ответ от сервера",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    CrashMonitor.trackWarning()
+                    Toast.makeText(appContext, exception.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+        catsView.refreshHandler = {
+            catsPresenter.onInitComplete()
+        }
+        catsPresenter.attachView(catsView)
         catsPresenter.onInitComplete()
     }
 
+    private fun withViewModel(catsView: CatsView) {
+        val appContext = this.applicationContext
+        catsView.refreshHandler = {
+            catsViewModel.loadContent()
+        }
+        catsViewModel.loadContent()
+
+        scope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                catsViewModel.state.collect { result ->
+                    when (result) {
+                        is Idle -> {}
+                        is Success -> {
+                            val fact = result.data
+                            catsView.populate(fact) { view, srcImage ->
+                                Picasso.get()
+                                    .load(srcImage)
+                                    .into(view)
+                            }
+                        }
+                        is Error -> {
+                            Toast.makeText(appContext, result.errorMessage, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     override fun onStop() {
+        scope.cancel()
         if (isFinishing) {
             catsPresenter.detachView()
         }

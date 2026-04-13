@@ -4,7 +4,9 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import com.squareup.picasso.Picasso
 import kotlinx.coroutines.launch
 import otus.homework.coroutines.di.DiContainer
 import otus.homework.coroutines.presentation.CatsPresenter
@@ -14,6 +16,7 @@ import otus.homework.coroutines.presentation.Idle
 import otus.homework.coroutines.presentation.Success
 import otus.homework.coroutines.utils.CrashMonitor
 import otus.homework.coroutines.utils.PresenterScope
+import otus.homework.coroutines.utils.cancel
 import java.net.SocketTimeoutException
 
 class MainActivity : AppCompatActivity() {
@@ -34,13 +37,14 @@ class MainActivity : AppCompatActivity() {
         val view = layoutInflater.inflate(R.layout.activity_main, null) as CatsView
         setContentView(view)
 
+        scope = PresenterScope()
         withViewModel(view)
         //withPresenter(view)
     }
 
     private fun withPresenter(catsView: CatsView) {
         val appContext = this.applicationContext
-        scope = PresenterScope()
+
         catsPresenter = CatsPresenter(
             retrofitClient = diContainer.retrofitClient,
             coroutineScope = scope,
@@ -71,16 +75,22 @@ class MainActivity : AppCompatActivity() {
         }
         catsViewModel.loadContent()
 
-        lifecycleScope.launch {
-            catsViewModel.state.collect { result ->
-                when (result) {
-                    is Idle -> {}
-                    is Success -> {
-                        val fact = result.catFact
-                        catsView.populate(fact)
-                    }
-                    is Error -> {
-                        Toast.makeText(appContext, result.errorMessage, Toast.LENGTH_SHORT).show()
+        scope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                catsViewModel.state.collect { result ->
+                    when (result) {
+                        is Idle -> {}
+                        is Success -> {
+                            val fact = result.data
+                            catsView.populate(fact) { view, srcImage ->
+                                Picasso.get()
+                                    .load(srcImage)
+                                    .into(view)
+                            }
+                        }
+                        is Error -> {
+                            Toast.makeText(appContext, result.errorMessage, Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
@@ -88,10 +98,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        /*scope.cancel()
+        scope.cancel()
         if (isFinishing) {
             catsPresenter.detachView()
-        }*/
+        }
         super.onStop()
     }
 }

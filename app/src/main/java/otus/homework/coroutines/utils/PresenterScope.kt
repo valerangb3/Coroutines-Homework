@@ -4,6 +4,8 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
 
 private val exHandler = getCoroutineExceptionHandler()
@@ -15,13 +17,11 @@ fun getCoroutineExceptionHandler(onErrorHandler: ((ex: Throwable) -> Unit)? = nu
     }
 }
 
+fun PresenterScope.cancel() = this.cancel()
+
 class PresenterScope(
-    context: CoroutineContext = Dispatchers.Main + CoroutineName("CatsCoroutine") + exHandler
+    context: CoroutineContext = Dispatchers.Main + CoroutineName("CatsCoroutine") + exHandler + SupervisorJob()
 ) :
     CoroutineScope {
     override val coroutineContext: CoroutineContext = context
-
-    fun cancel() {
-        this.cancel()
-    }
 }

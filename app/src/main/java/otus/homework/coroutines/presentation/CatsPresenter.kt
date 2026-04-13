@@ -1,5 +1,6 @@
 package otus.homework.coroutines.presentation
 
+import com.squareup.picasso.Picasso
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -19,8 +20,10 @@ class CatsPresenter(
         coroutineScope.launch {
             try {
                 val catFact = retrofitClient.getCatFact()
-                catFact?.let { fact ->
-                    _catsView?.populate(fact)
+                _catsView?.populate(catFact) { view, srcImage ->
+                    Picasso.get()
+                        .load(srcImage)
+                        .into(view)
                 }
             } catch (ex: CancellationException) {
                 throw ex

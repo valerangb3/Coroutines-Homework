@@ -1,6 +1,5 @@
 package otus.homework.coroutines.presentation
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -16,7 +15,7 @@ import java.net.SocketTimeoutException
 class CatsViewModel(
     private val retrofitClient: RetrofitClient,
 ) : ViewModel() {
-    private var _state = MutableStateFlow<Result>(Idle)
+    private var _state = MutableStateFlow<Result<CatFact>>(Idle)
     val state = _state.asStateFlow()
 
     fun loadContent() {
@@ -26,8 +25,7 @@ class CatsViewModel(
         viewModelScope.launch(exHandler) {
             try {
                 val fact = retrofitClient.getCatFact()
-                if (fact != null) _state.value = Success(fact)
-                else _state.value = Error("Can`t get cat fact")
+                _state.value = Success(fact)
             } catch (ex: CancellationException) {
                 throw ex
             } catch (_: SocketTimeoutException) {

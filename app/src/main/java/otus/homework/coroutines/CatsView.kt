@@ -23,14 +23,15 @@ class CatsView @JvmOverloads constructor(
         }
     }
 
-    override fun populate(fact: CatFact) {
+    override fun populate(fact: CatFact, setImage: ((view: ImageView, srcImage: String) -> Unit)?) {
         findViewById<TextView>(R.id.fact_textView).text = fact.fact
-        fact.image?.let {
-            findViewById<ImageView>(R.id.cat_imageView).setImageBitmap(it)
+        fact.image?.let { srcImg ->
+            val imageView = findViewById<ImageView>(R.id.cat_imageView)
+            setImage?.invoke(imageView, srcImg)
         }
     }
 }
 
 interface ICatsView {
-    fun populate(fact: CatFact)
+    fun populate(fact: CatFact, setImage: ((view: ImageView, srcImage: String) -> Unit)? = null)
 }
